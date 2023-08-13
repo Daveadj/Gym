@@ -1,6 +1,18 @@
+using Gym.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<GymDbContext>(
+    options =>
+    options.UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddIdentityCore<AppUser>(options => options.User.RequireUniqueEmail = true)
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<GymDbContext>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
