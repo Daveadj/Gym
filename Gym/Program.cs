@@ -1,5 +1,8 @@
+using FluentValidation;
 using Gym;
+using Gym.Dto;
 using Gym.Models;
+using Gym.Validators;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +13,8 @@ builder.Services.AddDbContext<GymDbContext>(
     options =>
     options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IValidator<RegisterUserDto>, RegisterUserDtoValidator>();
 
 builder.Services.AddIdentityCore<AppUser>(options => options.User.RequireUniqueEmail = true)
     .AddRoles<IdentityRole>()

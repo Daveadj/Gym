@@ -1,4 +1,6 @@
-﻿using Gym.Models;
+﻿using FluentValidation;
+using Gym.Dto;
+using Gym.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,13 @@ namespace Gym.Controllers
     {
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IValidator<RegisterUserDto> _validator;
 
-        public AccountController(RoleManager<IdentityRole> roleManager, UserManager<AppUser> userManager)
+        public AccountController(RoleManager<IdentityRole> roleManager, UserManager<AppUser> userManager, IValidator<RegisterUserDto> validator)
         {
             _roleManager = roleManager;
             _userManager = userManager;
+            _validator = validator;
         }
     }
 }
