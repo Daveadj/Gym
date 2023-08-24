@@ -7,7 +7,10 @@
         public string? MiddleName { get; set; }
         public String LastName { get; set; }
 
-        public int? YearOfBirth { get; set; }
-        public int? DayOfBirth { get; set; }
+        public string Email { get; set; }
+        public DateTime DateofBirth { get; set; }
+
+        public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
     }
 }

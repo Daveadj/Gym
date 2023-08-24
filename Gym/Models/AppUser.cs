@@ -8,8 +8,7 @@ namespace Gym.Models
 
         public string? MiddleName { get; set; }
         public String LastName { get; set; }
-
-        public int? YearOfBirth { get; set; }
-        public int? DayOfBirth { get; set; }
+        public DateTime DateofBirth { get; set; }
+        public String ProfilePicture { get; set; }
     }
 }
