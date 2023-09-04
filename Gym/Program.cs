@@ -26,15 +26,16 @@ builder.Services.AddIdentityCore<AppUser>(options => options.User.RequireUniqueE
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+       
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = ,
-            ValidAudience = ,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes()),
+            ValidIssuer = builder.Configuration.GetValue<string>("JWT:Issuer"),
+            ValidAudience = builder.Configuration.GetValue<string>("JWT:Audience"),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("JWT:Key"))),
         };
     });
 

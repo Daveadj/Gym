@@ -18,15 +18,17 @@ namespace Gym.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly IValidator<RegisterUserDto> _validator;
+        private readonly IConfiguration _configuration;
 
-        public AccountController(UserManager<AppUser> userManager, IValidator<RegisterUserDto> validator)
+        public AccountController(UserManager<AppUser> userManager, IValidator<RegisterUserDto> validator, IConfiguration configuration)
         {
             _userManager = userManager;
             _validator = validator;
+            _configuration = configuration;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(RegisterUserDto registerUser)
+        public async Task<IActionResult> Register([FromBody] RegisterUserDto registerUser)
         {
             var validationResult = await _validator.ValidateAsync(registerUser);
             if (!validationResult.IsValid)
@@ -56,23 +58,61 @@ namespace Gym.Controllers
             }
             await _userManager.AddToRoleAsync(newUser, "User");
 
+            var token = GenerateJwtToken(newUser);
+            return Ok(new
+            {
+                Token = token,
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginUserDto loginUser)
+        {
+            var user = await _userManager.FindByEmailAsync(loginUser.Email);
+            if (user != null && await _userManager.CheckPasswordAsync(user, loginUser.Password))
+            {
+                var token = GenerateJwtToken(user);
+                return Ok(new
+                {
+                    Token = token,
+                });
+            }
+            return Unauthorized();
+        }
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            return Ok(new { message = "logged out successfully. " });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(PasswordResetEmailDto useremail)
+        {
+            var user = await _userManager.FindByEmailAsync(useremail.Email);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+        }
+
+        private string GenerateJwtToken(AppUser user)
+        {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes();
+            var key = Encoding.ASCII.GetBytes(_configuration.GetValue<string>("JWT:Key"));
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
                {
-                   new Claim(ClaimTypes.Name, newUser.Id.ToString())
+                   new Claim(ClaimTypes.Name, user.Id.ToString())
                }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            return Ok(new
-            {
-                Token = tokenHandler.WriteToken(token)
-            });
+
+            return tokenHandler.WriteToken(token);
         }
     }
 }
