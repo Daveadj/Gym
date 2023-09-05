@@ -19,14 +19,17 @@ builder.Services.AddDbContext<GymDbContext>(
 
 builder.Services.AddScoped<IValidator<RegisterUserDto>, RegisterUserDtoValidator>();
 
-builder.Services.AddIdentityCore<AppUser>(options => options.User.RequireUniqueEmail = true)
+builder.Services.AddIdentityCore<AppUser>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+})
     .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<GymDbContext>();
+    .AddEntityFrameworkStores<GymDbContext>()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-       
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

@@ -27,7 +27,7 @@ namespace Gym.Controllers
             _configuration = configuration;
         }
 
-        [HttpPost]
+        [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto registerUser)
         {
             var validationResult = await _validator.ValidateAsync(registerUser);
@@ -48,6 +48,7 @@ namespace Gym.Controllers
                 MiddleName = registerUser.MiddleName,
                 LastName = registerUser.LastName,
                 Email = registerUser.Email,
+                UserName = registerUser.Email,
                 DateofBirth = registerUser.DateofBirth,
             };
 
@@ -65,7 +66,7 @@ namespace Gym.Controllers
             });
         }
 
-        [HttpPost]
+        [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginUserDto loginUser)
         {
             var user = await _userManager.FindByEmailAsync(loginUser.Email);
@@ -80,20 +81,38 @@ namespace Gym.Controllers
             return Unauthorized();
         }
 
-        [HttpPost]
+        [HttpPost("LogOut")]
         public IActionResult Logout()
         {
             return Ok(new { message = "logged out successfully. " });
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ResetPassword(PasswordResetEmailDto useremail)
+        [HttpPost("InitiateResetPassword")]
+        public async Task<IActionResult> InitiateResetPassword(PasswordResetEmailDto useremail)
         {
             var user = await _userManager.FindByEmailAsync(useremail.Email);
             if (user == null)
             {
+                return Ok(new { Token = "" }); //TODO: replace this with email sent message
+            }
+            var passwordReset = await _userManager.GeneratePasswordResetTokenAsync(user);
+            return Ok(new { Token = passwordReset });
+        }
+
+        [HttpPost("CompleteResetPassword")]
+        public async Task<IActionResult> CompleteResetPassword(PasswordResetDto passwordReset)
+        {
+            var user = await _userManager.FindByEmailAsync(passwordReset.Email);
+            if (user == null)
+            {
                 return BadRequest();
             }
+            var result = await _userManager.ResetPasswordAsync(user, passwordReset.Token, passwordReset.NewPassword);
+            if (!result.Succeeded)
+            {
+                return BadRequest();
+            }
+            return Ok();
         }
 
         private string GenerateJwtToken(AppUser user)
