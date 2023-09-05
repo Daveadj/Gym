@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Gym.Dto;
 using Gym.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -19,12 +20,14 @@ namespace Gym.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IValidator<RegisterUserDto> _validator;
         private readonly IConfiguration _configuration;
+        private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
 
-        public AccountController(UserManager<AppUser> userManager, IValidator<RegisterUserDto> validator, IConfiguration configuration)
+        public AccountController(UserManager<AppUser> userManager, IValidator<RegisterUserDto> validator, IConfiguration configuration, IValidator<ChangePasswordDto> changePasswordValidator)
         {
             _userManager = userManager;
             _validator = validator;
             _configuration = configuration;
+            _changePasswordValidator = changePasswordValidator;
         }
 
         [HttpPost("Register")]
@@ -109,6 +112,33 @@ namespace Gym.Controllers
             }
             var result = await _userManager.ResetPasswordAsync(user, passwordReset.Token, passwordReset.NewPassword);
             if (!result.Succeeded)
+            {
+                return BadRequest();
+            }
+            return Ok();
+        }
+
+        [HttpPost("ChangePassword")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto changePassword)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, changePassword.CurrentPassword);
+            if (!isPasswordValid)
+            {
+                return BadRequest();
+            }
+            var isValidPassword = await _changePasswordValidator.ValidateAsync(changePassword);
+            if (!isValidPassword.IsValid)
+            {
+                return BadRequest(isValidPassword.Errors);
+            }
+            var chandedPassword = await _userManager.ChangePasswordAsync(user, changePassword.CurrentPassword, changePassword.NewPassword);
+            if (!chandedPassword.Succeeded)
             {
                 return BadRequest();
             }
