@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Gym.Dto;
 using Gym.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -118,8 +119,8 @@ namespace Gym.Controllers
             return Ok();
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("ChangePassword")]
-        [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto changePassword)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -153,7 +154,7 @@ namespace Gym.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                {
-                   new Claim(ClaimTypes.Name, user.Id.ToString())
+                   new Claim(ClaimTypes.Name, user.Id)
                }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
