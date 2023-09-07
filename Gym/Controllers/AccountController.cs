@@ -1,7 +1,6 @@
 ﻿using FluentValidation;
 using Gym.Dto;
 using Gym.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -119,11 +118,12 @@ namespace Gym.Controllers
             return Ok();
         }
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize]
         [HttpPost("ChangePassword")]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto changePassword)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 return BadRequest();
@@ -138,8 +138,8 @@ namespace Gym.Controllers
             {
                 return BadRequest(isValidPassword.Errors);
             }
-            var chandedPassword = await _userManager.ChangePasswordAsync(user, changePassword.CurrentPassword, changePassword.NewPassword);
-            if (!chandedPassword.Succeeded)
+            var changedPassword = await _userManager.ChangePasswordAsync(user, changePassword.CurrentPassword, changePassword.NewPassword);
+            if (!changedPassword.Succeeded)
             {
                 return BadRequest();
             }
@@ -149,14 +149,21 @@ namespace Gym.Controllers
         private string GenerateJwtToken(AppUser user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration.GetValue<string>("JWT:Key"));
+            var key = Encoding.ASCII.GetBytes(_configuration.GetValue<string>("JWT:Key")!);
+            var issuer = _configuration.GetValue<string>("JWT:Issuer");
+            var audience = _configuration.GetValue<string>("JWT:Audience");
+
+            var claims = new Claim[]
+               {
+                   new Claim(ClaimTypes.NameIdentifier, user.Id)
+               };
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[]
-               {
-                   new Claim(ClaimTypes.Name, user.Id)
-               }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(1),
+                Issuer = issuer,
+                Audience = audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
